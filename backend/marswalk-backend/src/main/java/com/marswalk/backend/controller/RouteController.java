@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.marswalk.backend.grid.GridCell;
 import com.marswalk.backend.grid.GridLoader;
 import com.marswalk.backend.service.AStarPathFinder;
+import com.marswalk.backend.service.RouteMetricsCalculator;
+import com.marswalk.backend.service.RouteMetricsCalculator.RouteMetrics;
 
 
 @RestController
@@ -20,18 +22,24 @@ public class RouteController {
     
     private final GridLoader gridLoader;
     private final AStarPathFinder pathfinder;
+    private final RouteMetricsCalculator metricsCalculator;
 
-    public RouteController(GridLoader gridLoader, AStarPathFinder pathfinder) {
+    public RouteController(GridLoader gridLoader, AStarPathFinder pathfinder, RouteMetricsCalculator metricsCalculator) {
         this.gridLoader = gridLoader;
         this.pathfinder = pathfinder;
+        this.metricsCalculator = metricsCalculator;
     }
 
     @PostMapping
-    public List<GridCell> calculateRoute(@RequestBody RouteRequest request){
+    public RouteResponse calculateRoute(@RequestBody RouteRequest request){
         
         int[][] grid = gridLoader.getGrid();
 
-        return pathfinder.findPath(grid, request.start(), request.destination());
+        List<GridCell> path = pathfinder.findPath(grid, request.start(), request.destination());
+
+        RouteMetrics metrics = metricsCalculator.calculate(path, grid);
+
+        return new RouteResponse(path, metrics);
     }
     
 }
