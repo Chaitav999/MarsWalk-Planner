@@ -34,10 +34,11 @@ export default function MarsMap(){
     const [startCell, setStartCell] = useState(null);
     const [destinationCell, setDestinationCell] = useState(null);
     const selectionModeRef = useRef("start");
+    const [route, setRoute] = useState([]);
     
     const mapElement = useRef(null);
 
-    const handleMapClick = (event) => {
+    const handleMapClick = async (event) => {
         console.log("MAP CLICK DETECTED", event.coordinate);
         const [longitude, latitude] = event.coordinate;
 
@@ -60,6 +61,32 @@ export default function MarsMap(){
             setSelectionMode("destination");
         } else {
             setDestinationCell(cell);
+
+            try {
+                const response = await fetch("http://localhost:8080/api/routes", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        start: startCell,
+                        destination: cell,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to calculate route");
+                }
+
+                const path = await response.json();
+
+                setRoute(path);
+                console.log("A* route received:", path);
+
+            } catch (error) {
+                console.error("Route calculation failed:", error);
+            }
+
             selectionModeRef.current = "start";
             setSelectionMode("start");
         }
