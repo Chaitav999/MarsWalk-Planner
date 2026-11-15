@@ -16,6 +16,8 @@ import WMTSTileGrid from "ol/tilegrid/WMTS";
 import View from "ol/View";
 import Projection from "ol/proj/Projection";
 import TileLayer from "ol/layer/Tile";
+import ImageLayer from "ol/layer/Image";
+import Static from "ol/source/ImageStatic";
 
 import "ol/ol.css";
 
@@ -180,6 +182,15 @@ export default function MarsMap(){
             source: markerSource,
         });
 
+        const terrainLayer = new ImageLayer({
+            source: new Static({
+                url: "/data/terrain_overlay.png",
+                projection: marsProjection,
+                imageExtent: [west, south, east, north],
+            }),
+            opacity: 0.30,
+        });
+
         const view = new View({
             projection: marsProjection,
             center: [137.71, -5.46],
@@ -189,7 +200,7 @@ export default function MarsMap(){
 
         const map = new Map({
             target: mapElement.current,
-            layers: [ctxLayer, routeLayer, markerLayer],
+            layers: [ctxLayer, terrainLayer, routeLayer, markerLayer],
             view: view,
         });
 
@@ -291,9 +302,30 @@ export default function MarsMap(){
 
 
     return (
-        <div>
+        <div className="map-container">
             <div ref={mapElement} className="mars-map" />
 
+            <div className="terrain-legend">
+                <h3>Terrain Difficulty</h3>
+
+                <div className="legend-item">
+                    <span className="legend-color low"></span>
+                    <span>Lower cost (1)</span>
+                </div>
+
+                <div className="legend-item">
+                    <span className="legend-color medium"></span>
+                    <span>Moderate cost (3)</span>
+                </div>
+
+                <div className="legend-item">
+                    <span className="legend-color high"></span>
+                    <span>Higher cost (8)</span>
+                </div>
+
+                <p>Derived from MOLA elevation and slope</p>
+
+            </div>
             <div className="selection-info">
                 <p>
                     Selection mode: {selectionMode}

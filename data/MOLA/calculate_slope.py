@@ -64,10 +64,7 @@ np.savetxt(
 
 print("Terrain cost grid exported successfully.")
 
-plt.colorbar(
-    cost_map,
-    label="Terrain cost"
-)
+plt.colorbar(cost_map, label="Terrain cost")
 
 plt.title("MOLA Terrain Cost Grid — Nevado Sajama")
 plt.xlabel("East-West pixels")
@@ -82,3 +79,24 @@ plt.show()
 print("Slope minimum:", round(float(slope.min()), 2), "degrees")
 print("Slope maximum:", round(float(slope.max()), 2), "degrees")
 print("Slope average:", round(float(slope.mean()), 2), "degrees")
+
+from matplotlib.colors import ListedColormap
+
+# Create a clean terrain difficulty overlay
+colors = ListedColormap([
+    "#22c55e",  # Low cost
+    "#eab308",  # Medium cost
+    "#ef4444"   # High cost
+])
+
+plt.figure(figsize=(8, 8))
+
+plt.imshow(terrain_cost, cmap=colors, interpolation="nearest", origin="upper", vmin=1, vmax=8)
+
+plt.axis("off")
+
+plt.savefig("data/mola/terrain_overlay.png", transparent=True, bbox_inches="tight", pad_inches=0)
+
+plt.close()
+
+print("Terrain overlay exported successfully.")
