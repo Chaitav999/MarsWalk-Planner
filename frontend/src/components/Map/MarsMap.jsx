@@ -11,10 +11,11 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
 import Map from "ol/Map";
+import WMTS from "ol/source/WMTS";
+import WMTSTileGrid from "ol/tilegrid/WMTS";
 import View from "ol/View";
 import Projection from "ol/proj/Projection";
-import ImageLayer from "ol/layer/Image";
-import Static from "ol/source/ImageStatic";
+import TileLayer from "ol/layer/Tile";
 
 import "ol/ol.css";
 
@@ -23,11 +24,48 @@ const east = 137.86625;
 const south = -5.61625;
 const north = -5.30375;
 
+const marsRadius = 3396190;
+
 const marsProjection = new Projection({
     code: "MARS:GEOGRAPHIC",
     units: "degrees",
+    metersPerUnit: (2 * Math.PI * marsRadius) / 360,
     extent: [west, south, east, north],
 });
+
+
+const scaleDenominators = [
+    2.7922763629807472E+08,
+    1.3961381814903736E+08,
+    6.9806909074518681E+07,
+    3.4903454537259340E+07,
+    1.7451727268629670E+07,
+    8.7258636343148351E+06,
+    4.3629318171574175E+06,
+    2.1814659085787088E+06,
+    1.0907329542893544E+06,
+    5.4536647714467719E+05,
+    2.7268323857233860E+05,
+    1.3634161928616930E+05,
+];
+
+
+
+const matrixSizes = scaleDenominators.map((_, index) => [2 ** (index + 1),2 ** index]);
+
+const resolutions = matrixSizes.map(size => 360 / (size[0] * 256));
+
+const matrixIds = scaleDenominators.map((_, index) => String(index));
+
+const ctxTileGrid = new WMTSTileGrid({
+    origin: [-180, 90],
+    resolutions: resolutions,
+    matrixIds: matrixIds,
+    sizes: matrixSizes,
+    tileSize: 256,
+    extent: [-180, -90, 180, 90],
+});
+
 
 export default function MarsMap(){
 
@@ -113,12 +151,19 @@ export default function MarsMap(){
     useEffect(() => {
         if (!mapElement.current) return;
 
-        const elevationLayer = new ImageLayer({
-            source: new Static({
-                url: "/data/sajama_elevation_raster.png",
-                projection: marsProjection,
-                imageExtent: [west, south, east, north],
-            }),
+        const ctxSource = new WMTS({
+            url: "https://api.nasa.gov/mars-wmts/catalog/curiosity_ctx_mosaic/1.0.0/{Style}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer: "curiosity_ctx_mosaic",
+            matrixSet: "default028mm",
+            format: "image/png",
+            projection: marsProjection,
+            tileGrid: ctxTileGrid,
+            style: "default",
+            requestEncoding: "REST",
+        });
+
+        const ctxLayer = new TileLayer({
+            source: ctxSource,
         });
 
         const markerSource = new VectorSource();
@@ -144,7 +189,7 @@ export default function MarsMap(){
 
         const map = new Map({
             target: mapElement.current,
-            layers: [elevationLayer, routeLayer, markerLayer],
+            layers: [ctxLayer, routeLayer, markerLayer],
             view: view,
         });
 
