@@ -57,3 +57,5 @@ plt.legend()
 plt.tight_layout()
 plt.savefig("data/mola/sajama_elevation.png", dpi=150)
 plt.show()
+
+plt.imsave("data/mola/sajama_elevation_raster.png", region, cmap="terrain")
