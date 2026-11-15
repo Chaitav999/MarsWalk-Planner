@@ -26,13 +26,18 @@ public class AStarPathFinder {
     //Immutable entry: scores cannot change after insertion.
     private record QueueEntry(GridCell cell, double gScore, double fScore) {}
 
-    public List<GridCell> findPath(int[][] grid, GridCell start, GridCell goal) {
+    public List<GridCell> findPath(int[][] grid, double[][] slopeGrid, GridCell start, GridCell goal, double maxSlope) {
 
         int rows = grid.length;
         int cols = grid[0].length;
 
         validateCell(start, rows, cols);
         validateCell(goal, rows, cols);
+
+        if (slopeGrid[start.row()][start.col()] > maxSlope || slopeGrid[goal.row()][goal.col()] > maxSlope) {
+            
+            return Collections.emptyList();
+        }
 
         Map<GridCell, Double> gScore = new HashMap<>();
         Map<GridCell, GridCell> cameFrom = new HashMap<>();
@@ -75,6 +80,9 @@ public class AStarPathFinder {
                 GridCell neighbor = new GridCell(newRow, newCol);
 
                 if (closedSet.contains(neighbor)){
+                    continue;
+                }
+                if (slopeGrid[newRow][newCol] > maxSlope) {
                     continue;
                 }
 

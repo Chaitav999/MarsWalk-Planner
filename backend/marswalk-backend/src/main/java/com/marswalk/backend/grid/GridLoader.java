@@ -14,11 +14,14 @@ import org.springframework.stereotype.Component;
 public class GridLoader implements CommandLineRunner {
 
     private int[][] grid;
+    private double[][] slopeGrid;
 
     @Override
     public void run(String... args) throws Exception {
         loadGrid();
+        loadSlopeGrid();
         System.out.println("Terrain grid loaded: " + grid.length + " x " + grid[0].length);
+        System.out.println("Slope grid loaded: " + slopeGrid.length + " x " + slopeGrid[0].length);
     }
 
     private void loadGrid() throws IOException {
@@ -59,6 +62,39 @@ public class GridLoader implements CommandLineRunner {
 
     public int[][] getGrid(){
         return grid;
+    }
+    public double[][] getSlopeGrid() {
+    return slopeGrid;
+}
+
+    private void loadSlopeGrid() throws IOException{
+        
+        List<double[]> rows = new ArrayList<>();
+
+        ClassPathResource resource = new ClassPathResource("slope.csv");
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+
+                String[] values = line.split(",");
+                double[] row = new double[values.length];
+
+                for (int i = 0; i < values.length; i++) {
+                    row[i] = Double.parseDouble(values[i].trim());
+                }
+
+                rows.add(row);
+            }
+        }
+
+        if (rows.size() != 40 || rows.get(0).length != 40) {
+            throw new IllegalStateException("Expected a 40 x 40 slope grid");
+        }
+
+        slopeGrid = rows.toArray(new double[0][]);
     }
     
 }

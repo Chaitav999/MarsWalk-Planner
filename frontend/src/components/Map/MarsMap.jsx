@@ -76,6 +76,7 @@ export default function MarsMap(){
     const [destinationCell, setDestinationCell] = useState(null);
     const [route, setRoute] = useState([]);
     const [routeMetrics, setRouteMetrics] = useState(null);
+    const [maxSlope, setMaxSlope] = useState(20);
 
     const selectionModeRef = useRef("start");
     const startCellRef = useRef(null);
@@ -127,6 +128,7 @@ export default function MarsMap(){
                     body: JSON.stringify({
                         start: startCellRef.current,
                         destination: cell,
+                        maxSlope: maxSlope
                     }),
                 });
 
@@ -331,6 +333,31 @@ export default function MarsMap(){
                 <p>Derived from MOLA elevation and slope</p>
 
             </div>
+
+            <div className="slope-control">
+                <h3>Astronaut Suit Constraints</h3>
+
+                <label>
+                    Maximum allowable slope: {maxSlope}°
+                </label>
+
+                <input
+                    type="range"
+                    min="5"
+                    max="40"
+                    step="1"
+                    value={maxSlope}
+                    onChange={(event) => {
+                        setMaxSlope(Number(event.target.value));
+                    }}
+                />
+
+                <div className="slope-range">
+                    <span>5°</span>
+                    <span>40°</span>
+                </div>
+            </div>
+            
             <div className="selection-info">
                 <p>
                     Selection mode: {selectionMode}

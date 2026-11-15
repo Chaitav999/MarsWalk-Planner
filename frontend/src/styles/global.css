@@ -114,3 +114,33 @@ main {
 .route-metrics p {
     margin: 8px 0;
 }
+
+.slope-control {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    width: 240px;
+    padding: 15px;
+    background: rgba(20, 24, 32, 0.95);
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.slope-control h3 {
+    margin: 0 0 12px;
+}
+
+.slope-control input {
+    width: 100%;
+    margin-top: 12px;
+    cursor: pointer;
+}
+
+.slope-range {
+    display: flex;
+    justify-content: space-between;
+    color: #aaa;
+    margin-top: 5px;
+}

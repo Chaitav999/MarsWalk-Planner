@@ -62,6 +62,14 @@ np.savetxt(
     fmt="%d"
 )
 
+#saves slope angle
+np.savetxt(
+    "data/mola/slope.csv",
+    slope,
+    delimiter=",",
+    fmt="%.4f"
+)
+
 print("Terrain cost grid exported successfully.")
 
 plt.colorbar(cost_map, label="Terrain cost")

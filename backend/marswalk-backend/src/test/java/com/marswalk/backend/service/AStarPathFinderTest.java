@@ -4,6 +4,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import com.marswalk.backend.grid.GridCell;
@@ -28,12 +29,14 @@ class AStarPathFinderTest {
         grid[2][2] = 8;
         grid[2][3] = 8;
 
+        double[][] slopeGrid = new double[5][5];
+
         AStarPathFinder pathfinder = new AStarPathFinder();
 
         GridCell start = new GridCell(2, 0);
         GridCell goal = new GridCell(2, 4);
 
-        List<GridCell> path = pathfinder.findPath(grid, start, goal);
+        List<GridCell> path = pathfinder.findPath(grid, slopeGrid, start, goal, 20);
 
         assertFalse(path.isEmpty());
         assertEquals(start, path.get(0));
@@ -42,5 +45,41 @@ class AStarPathFinderTest {
         assertFalse(path.contains(new GridCell(2, 1)));
         assertFalse(path.contains(new GridCell(2, 2)));
         assertFalse(path.contains(new GridCell(2, 3)));
+    }
+
+    @Test
+    void shouldAvoidTerrainAboveMaximumSlope() {
+
+        int[][] grid = new int[5][5];
+        double[][] slopeGrid = new double[5][5];
+
+        //Initialize normal terrain
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 5; col++) {
+                grid[row][col] = 1;
+                slopeGrid[row][col] = 5;
+            }
+        }
+      
+        slopeGrid[2][1] = 30;
+        slopeGrid[2][2] = 30;
+        slopeGrid[2][3] = 30;
+
+        AStarPathFinder pathfinder = new AStarPathFinder();
+
+        GridCell start = new GridCell(2, 0);
+        GridCell goal = new GridCell(2, 4);
+
+        List<GridCell> path = pathfinder.findPath(grid, slopeGrid, start, goal, 20);
+
+        assertFalse(path.isEmpty());
+        assertEquals(start, path.get(0));
+        assertEquals(goal, path.get(path.size() - 1));
+
+        for (GridCell cell : path) {
+            assertTrue(slopeGrid[cell.row()][cell.col()] <= 20,
+                    "Path contains terrain exceeding maximum slope"
+            );
+        }
     }
 }
