@@ -1,19 +1,32 @@
+
 package com.marswalk.backend.service;
 
-import com.marswalk.backend.grid.GridCell;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import com.marswalk.backend.grid.GridCell;
 
 @Component
 public class AStarPathFinder {
-    
+
     private static final int[][] DIRECTIONS = {
         {-1, 0}, {1, 0}, {0, -1}, {0, 1},
         {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
     };
 
-    public List<GridCell> findPath(int[][] grid, GridCell start, GridCell goal){
+    //Immutable entry: scores cannot change after insertion.
+    private record QueueEntry(GridCell cell, double gScore, double fScore) {}
+
+    public List<GridCell> findPath(int[][] grid, GridCell start, GridCell goal) {
 
         int rows = grid.length;
         int cols = grid[0].length;
@@ -24,39 +37,44 @@ public class AStarPathFinder {
         Map<GridCell, Double> gScore = new HashMap<>();
         Map<GridCell, GridCell> cameFrom = new HashMap<>();
 
-        PriorityQueue<GridCell> openSet = new PriorityQueue<>(Comparator.comparingDouble(
-            cell -> gScore.getOrDefault(cell, Double.POSITIVE_INFINITY) + heuristic(cell, goal)
-        ));
+        PriorityQueue<QueueEntry> openSet = new PriorityQueue<>(Comparator.comparingDouble(QueueEntry::fScore));
 
         gScore.put(start, 0.0);
-        openSet.add(start);
+
+        openSet.add(new QueueEntry(start, 0.0, heuristic(start, goal)));
 
         Set<GridCell> closedSet = new HashSet<>();
 
         while (!openSet.isEmpty()) {
 
-            GridCell current = openSet.poll();
+            QueueEntry entry = openSet.poll();
+            GridCell current = entry.cell();
 
-            if (current.equals(goal)) {
-                return reconstructPath(cameFrom, current);
-            }
-
-            if (!closedSet.add(current)) {
+            // Ignore outdated queue entries.
+            if (entry.gScore() > gScore.getOrDefault(current, Double.POSITIVE_INFINITY)){
                 continue;
             }
 
-            for (int[] direction : DIRECTIONS) {
+            if (current.equals(goal)){
+                return reconstructPath(cameFrom, current);
+            }
+
+            if (!closedSet.add(current)){
+                continue;
+            }
+
+            for (int[] direction : DIRECTIONS){
 
                 int newRow = current.row() + direction[0];
                 int newCol = current.col() + direction[1];
 
-                if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
+                if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols){
                     continue;
                 }
 
                 GridCell neighbor = new GridCell(newRow, newCol);
 
-                if (closedSet.contains(neighbor)) {
+                if (closedSet.contains(neighbor)){
                     continue;
                 }
 
@@ -68,11 +86,14 @@ public class AStarPathFinder {
 
                 double tentativeG = gScore.get(current) + movementCost;
 
-                if (tentativeG < gScore.getOrDefault(neighbor, Double.POSITIVE_INFINITY)) {
+                if (tentativeG < gScore.getOrDefault(neighbor, Double.POSITIVE_INFINITY)){
 
                     cameFrom.put(neighbor, current);
                     gScore.put(neighbor, tentativeG);
-                    openSet.add(neighbor);
+
+                    double fScore = tentativeG + heuristic(neighbor, goal);
+
+                    openSet.add(new QueueEntry(neighbor, tentativeG, fScore));
                 }
             }
         }
@@ -90,15 +111,13 @@ public class AStarPathFinder {
 
     private void validateCell(GridCell cell, int rows, int cols) {
 
-        if (cell == null || cell.row() < 0 || cell.row() >= rows || cell.col() < 0 || cell.col() >= cols) {
+        if (cell == null || cell.row() < 0 || cell.row() >= rows || cell.col() < 0 || cell.col() >= cols){
 
-            throw new IllegalArgumentException(
-                "Start or destination is outside the terrain grid"
-            );
+            throw new IllegalArgumentException("Start or destination is outside the terrain grid");
         }
     }
 
-    private List<GridCell> reconstructPath(Map<GridCell, GridCell> cameFrom, GridCell current) {
+    private List<GridCell> reconstructPath(Map<GridCell, GridCell> cameFrom, GridCell current){
 
         List<GridCell> path = new ArrayList<>();
 
@@ -111,4 +130,3 @@ public class AStarPathFinder {
         return path;
     }
 }
-
