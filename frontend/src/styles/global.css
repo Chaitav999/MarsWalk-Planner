@@ -92,3 +92,25 @@ main {
 .selection-info p {
     margin: 5px 0;
 }
+
+
+.route-metrics {
+    position: absolute;
+    bottom: 20px;
+    left: 210px;
+    z-index: 1000;
+    background: rgba(20, 24, 32, 0.95);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    min-width: 200px;
+}
+
+.route-metrics h3 {
+    margin: 0 0 10px;
+}
+
+.route-metrics p {
+    margin: 8px 0;
+}

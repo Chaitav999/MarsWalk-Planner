@@ -75,6 +75,7 @@ export default function MarsMap(){
     const [startCell, setStartCell] = useState(null);
     const [destinationCell, setDestinationCell] = useState(null);
     const [route, setRoute] = useState([]);
+    const [routeMetrics, setRouteMetrics] = useState(null);
 
     const selectionModeRef = useRef("start");
     const startCellRef = useRef(null);
@@ -108,6 +109,7 @@ export default function MarsMap(){
             setStartCell(cell);
             setDestinationCell(null);
             setRoute([]);
+            setRouteMetrics(null);
 
             selectionModeRef.current = "destination";
             setSelectionMode("destination");
@@ -132,14 +134,17 @@ export default function MarsMap(){
                     throw new Error("Failed to calculate route");
                 }
 
-                const path = await response.json();
+                const data = await response.json();
 
-                setRoute(path);
-                console.log("A* route received:", path);
+                setRoute(data.path);
+                setRouteMetrics(data.metrics);
+
+                console.log("Route metrics:", data.metrics);
 
             } catch (error) {
                 console.error("Route calculation failed:", error);
                 setRoute([]);
+                setRouteMetrics(null);
             }
 
             selectionModeRef.current = "start";
@@ -343,6 +348,23 @@ export default function MarsMap(){
                         : "Not selected"}
                 </p>
             </div>
+            {routeMetrics && (
+                <div className="route-metrics">
+                    <h3>Route Metrics</h3>
+
+                    <p>
+                        Distance: {(routeMetrics.distanceMeters / 1000).toFixed(2)} km
+                    </p>
+
+                    <p>
+                        Estimated walking time: {routeMetrics.walkingMinutes.toFixed(1)} min
+                    </p>
+
+                    <p>
+                        Terrain cost: {routeMetrics.terrainCost.toFixed(0)}
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
