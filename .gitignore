@@ -1,0 +1,4 @@
+#Large NASA terrain datasets
+data/mola/*.img
+data/mola/*.xml
+data/mola/*.lbl
