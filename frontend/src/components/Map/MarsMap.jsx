@@ -4,6 +4,7 @@ import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
+import LineString from "ol/geom/LineString";
 import Style from "ol/style/Style";
 import CircleStyle from "ol/style/Circle";
 import Fill from "ol/style/Fill";
@@ -33,13 +34,18 @@ export default function MarsMap(){
     const [selectionMode, setSelectionMode] = useState("start");
     const [startCell, setStartCell] = useState(null);
     const [destinationCell, setDestinationCell] = useState(null);
-    const selectionModeRef = useRef("start");
     const [route, setRoute] = useState([]);
-    
+
+    const selectionModeRef = useRef("start");
+    const startCellRef = useRef(null);
+
     const mapElement = useRef(null);
+    const markerSourceRef = useRef(null);
+    const routeSourceRef = useRef(null);
 
     const handleMapClick = async (event) => {
         console.log("MAP CLICK DETECTED", event.coordinate);
+
         const [longitude, latitude] = event.coordinate;
 
         const col = Math.floor(((longitude - west) / (east - west)) * 40);
@@ -56,10 +62,18 @@ export default function MarsMap(){
         const cell = { row, col };
 
         if (selectionModeRef.current === "start") {
+
+            startCellRef.current = cell;
+
             setStartCell(cell);
+            setDestinationCell(null);
+            setRoute([]);
+
             selectionModeRef.current = "destination";
             setSelectionMode("destination");
+
         } else {
+
             setDestinationCell(cell);
 
             try {
@@ -69,7 +83,7 @@ export default function MarsMap(){
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        start: startCell,
+                        start: startCellRef.current,
                         destination: cell,
                     }),
                 });
@@ -85,15 +99,17 @@ export default function MarsMap(){
 
             } catch (error) {
                 console.error("Route calculation failed:", error);
+                setRoute([]);
             }
 
             selectionModeRef.current = "start";
             setSelectionMode("start");
         }
+
         console.log("Click processed");
     };
 
-    
+
     useEffect(() => {
         if (!mapElement.current) return;
 
@@ -106,6 +122,14 @@ export default function MarsMap(){
         });
 
         const markerSource = new VectorSource();
+        markerSourceRef.current = markerSource;
+
+        const routeSource = new VectorSource();
+        routeSourceRef.current = routeSource;
+
+        const routeLayer = new VectorLayer({
+            source: routeSource,
+        });
 
         const markerLayer = new VectorLayer({
             source: markerSource,
@@ -120,23 +144,52 @@ export default function MarsMap(){
 
         const map = new Map({
             target: mapElement.current,
-            layers: [elevationLayer, markerLayer],
+            layers: [elevationLayer, routeLayer, markerLayer],
             view: view,
         });
 
         map.on("click", handleMapClick);
 
-        const updateMarkers = () => {
+        map.updateSize();
+
+        view.fit([west, south, east, north], {
+            size: map.getSize(),
+            padding: [30, 30, 30, 30],
+        });
+
+        return () => {
+            map.un("click", handleMapClick);
+            map.setTarget(undefined);
+
+            markerSourceRef.current = null;
+            routeSourceRef.current = null;
+        };
+
+    }, []);
+
+
+    useEffect(() => {
+
+        const markerSource = markerSourceRef.current;
+
+        if (!markerSource) return;
+
         markerSource.clear();
 
-        const addMarker = (cell, color) => {
-            if (!cell) return;
+        const cellToCoordinate = (cell) => {
 
             const longitude = west + (cell.col + 0.5) * (east - west) / 40;
             const latitude = north - (cell.row + 0.5) * (north - south) / 40;
 
+            return [longitude, latitude];
+        };
+
+        const addMarker = (cell, color) => {
+
+            if (!cell) return;
+
             const marker = new Feature({
-                geometry: new Point([longitude, latitude]),
+                geometry: new Point(cellToCoordinate(cell)),
             });
 
             marker.setStyle(new Style({
@@ -155,22 +208,41 @@ export default function MarsMap(){
 
         addMarker(startCell, "#22c55e");
         addMarker(destinationCell, "#ef4444");
-    };
 
-    updateMarkers();
+    }, [startCell, destinationCell]);
 
-        map.updateSize();
 
-        view.fit([west, south, east, north], {
-            size: map.getSize(),
-            padding: [30, 30, 30, 30],
+    useEffect(() => {
+
+        const routeSource = routeSourceRef.current;
+
+        if (!routeSource) return;
+
+        routeSource.clear();
+
+        if (route.length === 0) return;
+
+        const coordinates = route.map((cell) => {
+
+            const longitude = west + (cell.col + 0.5) * (east - west) / 40;
+            const latitude = north - (cell.row + 0.5) * (north - south) / 40;
+
+            return [longitude, latitude];
         });
 
-        return () => {
-            map.un("click", handleMapClick);
-            map.setTarget(undefined);
-        };
-    }, [startCell, destinationCell]);
+        const routeFeature = new Feature({geometry: new LineString(coordinates),
+        });
+
+        routeFeature.setStyle(new Style({
+            stroke: new Stroke({
+                color: "#2563eb",
+                width: 4,
+            }),
+        }));
+
+        routeSource.addFeature(routeFeature);
+
+    }, [route]);
 
 
     return (
