@@ -12,9 +12,7 @@ public class RouteMetricsCalculator {
     private static final double MARS_RADIUS = 3396190.0;
     private static final double GRID_CELL_DEGREES = 1.0 / 128.0;
 
-    private static final double WALKING_SPEED_METERS_PER_SECOND = 1.0;
-
-     public RouteMetrics calculate(List<GridCell> path, int[][] grid) {
+    public RouteMetrics calculate(List<GridCell> path, int[][] grid, double walkingSpeed) {
 
         if (path == null || path.isEmpty()) {
             return new RouteMetrics(0, 0, 0);
@@ -44,7 +42,11 @@ public class RouteMetricsCalculator {
             }
         }
 
-        double walkingMinutes = distanceMeters / WALKING_SPEED_METERS_PER_SECOND / 60.0;
+        if (walkingSpeed <= 0 || !Double.isFinite(walkingSpeed)) {
+            throw new IllegalArgumentException("Walking speed must be greater than zero");
+        }
+
+        double walkingMinutes = distanceMeters / walkingSpeed / 60.0;
 
         return new RouteMetrics(distanceMeters, walkingMinutes, terrainCost);
     }

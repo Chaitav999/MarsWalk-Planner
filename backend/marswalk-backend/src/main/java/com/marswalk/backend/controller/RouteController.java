@@ -37,7 +37,7 @@ public class RouteController {
 
         List<GridCell> path = pathfinder.findPath(grid,gridLoader.getSlopeGrid(), request.start(), request.destination(), request.maxSlope());
 
-        RouteMetrics metrics = metricsCalculator.calculate(path, grid);
+        RouteMetrics metrics = metricsCalculator.calculate(path, grid, request.walkingSpeed());
 
         return new RouteResponse(path, metrics);
     }

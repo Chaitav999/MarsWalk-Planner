@@ -77,6 +77,7 @@ export default function MarsMap(){
     const [route, setRoute] = useState([]);
     const [routeMetrics, setRouteMetrics] = useState(null);
     const [maxSlope, setMaxSlope] = useState(20);
+    const [walkingSpeed, setWalkingSpeed] = useState(1.0);
 
     const selectionModeRef = useRef("start");
     const startCellRef = useRef(null);
@@ -128,7 +129,8 @@ export default function MarsMap(){
                     body: JSON.stringify({
                         start: startCellRef.current,
                         destination: cell,
-                        maxSlope: maxSlope
+                        maxSlope: maxSlope,
+                        walkingSpeed: walkingSpeed
                     }),
                 });
 
@@ -342,11 +344,7 @@ export default function MarsMap(){
                 </label>
 
                 <input
-                    type="range"
-                    min="5"
-                    max="40"
-                    step="1"
-                    value={maxSlope}
+                    type="range" min="5" max="40" step="1" value={maxSlope}
                     onChange={(event) => {
                         setMaxSlope(Number(event.target.value));
                     }}
@@ -356,7 +354,20 @@ export default function MarsMap(){
                     <span>5°</span>
                     <span>40°</span>
                 </div>
+
+                <div className="walking-speed-control">
+                    <label>
+                        Walking speed: {walkingSpeed.toFixed(1)} m/s
+                    </label>
+
+                    <input
+                        type="range" min="0.2" max="1.5" step="0.1" value={walkingSpeed}
+                        onChange={(event) => setWalkingSpeed(Number(event.target.value))}
+                    />
+                </div>
             </div>
+
+            
             
             <div className="selection-info">
                 <p>
@@ -379,17 +390,17 @@ export default function MarsMap(){
                 <div className="route-metrics">
                     <h3>Route Metrics</h3>
 
-                    <p>
-                        Distance: {(routeMetrics.distanceMeters / 1000).toFixed(2)} km
-                    </p>
+                    <p>Distance: {(routeMetrics.distanceMeters / 1000).toFixed(2)} km</p>
 
                     <p>
-                        Estimated walking time: {routeMetrics.walkingMinutes.toFixed(1)} min
+                        Estimated walking time: {
+                            (routeMetrics.distanceMeters / walkingSpeed / 60).toFixed(1)
+                        } min
                     </p>
 
-                    <p>
-                        Terrain cost: {routeMetrics.terrainCost.toFixed(0)}
-                    </p>
+                    <p> Terrain cost: {routeMetrics.terrainCost.toFixed(0)} </p>
+
+                    <p>Walking speed: {walkingSpeed.toFixed(1)} m/s</p>
                 </div>
             )}
         </div>
