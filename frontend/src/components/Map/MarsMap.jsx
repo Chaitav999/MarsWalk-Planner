@@ -68,6 +68,30 @@ const ctxTileGrid = new WMTSTileGrid({
     extent: [-180, -90, 180, 90],
 });
 
+const scienceObjectives = [
+    {
+        id: 1,
+        name: "Boxwork Formation",
+        description: "Candidate target for studying boxwork ridge structures.",
+        row: 10,
+        col: 12
+    },
+    {
+        id: 2,
+        name: "Layered Outcrop",
+        description: "Candidate target for examining exposed geological layers.",
+        row: 20,
+        col: 25
+    },
+    {
+        id: 3,
+        name: "Rock Texture",
+        description: "Candidate target for examining surface rock textures.",
+        row: 30,
+        col: 18
+    }
+];
+
 
 export default function MarsMap(){
 
@@ -78,6 +102,8 @@ export default function MarsMap(){
     const [routeMetrics, setRouteMetrics] = useState(null);
     const [maxSlope, setMaxSlope] = useState(20);
     const [walkingSpeed, setWalkingSpeed] = useState(1.0);
+    const [evaTimeBudget, setEvaTimeBudget] = useState(240);
+    const [selectedObjectives, setSelectedObjectives] = useState([]);
 
     const selectionModeRef = useRef("start");
     const startCellRef = useRef(null);
@@ -274,7 +300,16 @@ export default function MarsMap(){
         addMarker(startCell, "#22c55e");
         addMarker(destinationCell, "#ef4444");
 
-    }, [startCell, destinationCell]);
+        scienceObjectives.forEach((objective) => {
+            const isSelected = selectedObjectives.includes(objective.id);
+
+            addMarker(
+                { row: objective.row, col: objective.col },
+                isSelected ? "#f59e0b" : "#a78bfa"
+            );
+        });
+
+    }, [startCell, destinationCell, selectedObjectives]);
 
 
     useEffect(() => {
@@ -308,6 +343,10 @@ export default function MarsMap(){
         routeSource.addFeature(routeFeature);
 
     }, [route]);
+
+    const estimatedWalkingMinutes = routeMetrics ? routeMetrics.distanceMeters / walkingSpeed / 60 : 0;
+
+    const isWithinEvaBudget = routeMetrics !== null && estimatedWalkingMinutes <= evaTimeBudget;
 
 
     return (
@@ -365,6 +404,46 @@ export default function MarsMap(){
                         onChange={(event) => setWalkingSpeed(Number(event.target.value))}
                     />
                 </div>
+
+                <div className="eva-budget-control">
+                    <label>
+                        EVA time budget: {evaTimeBudget} minutes
+                        ({(evaTimeBudget / 60).toFixed(1)} hours)
+                    </label>
+
+                    <input
+                        type="range" min="60" max="480" step="15" value={evaTimeBudget} onChange={(event) => setEvaTimeBudget(Number(event.target.value))}
+                    />
+                </div>
+            </div>
+
+            <div className="science-objectives">
+                <h3>Science Objectives</h3>
+
+                {scienceObjectives.map((objective) => (
+                    <label key={objective.id} className="objective-item">
+                        <input
+                            type="checkbox"
+                            checked={selectedObjectives.includes(objective.id)}
+                            onChange={(event) => {
+                                setSelectedObjectives((previous) =>
+                                    event.target.checked
+                                        ? [...previous, objective.id]
+                                        : previous.filter((id) => id !== objective.id)
+                                );
+                            }}
+                        />
+
+                        <div>
+                            <strong>{objective.name}</strong>
+                            <p>{objective.description}</p>
+                        </div>
+                    </label>
+                ))}
+
+                <div className="selected-count">
+                    Selected objectives: {selectedObjectives.length}
+                </div>
             </div>
 
             
@@ -396,6 +475,9 @@ export default function MarsMap(){
                         Estimated walking time: {
                             (routeMetrics.distanceMeters / walkingSpeed / 60).toFixed(1)
                         } min
+                    </p>
+                    <p>
+                        EVA feasibility: {isWithinEvaBudget ? "Within time budget" : "Exceeds time budget"}
                     </p>
 
                     <p> Terrain cost: {routeMetrics.terrainCost.toFixed(0)} </p>
