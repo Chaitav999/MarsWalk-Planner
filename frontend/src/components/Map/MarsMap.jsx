@@ -107,6 +107,7 @@ export default function MarsMap(){
 
     const selectionModeRef = useRef("start");
     const startCellRef = useRef(null);
+    const selectedObjectivesRef = useRef([]);
 
     const mapElement = useRef(null);
     const markerSourceRef = useRef(null);
@@ -146,6 +147,17 @@ export default function MarsMap(){
 
             setDestinationCell(cell);
 
+            console.log("Selected waypoints:",
+                scienceObjectives
+                    .filter(objective =>
+                        selectedObjectivesRef.current.includes(objective.id)
+                    )
+                    .map(objective => ({
+                        row: objective.row,
+                        col: objective.col
+                    }))
+            );
+
             try {
                 const response = await fetch("http://localhost:8080/api/routes", {
                     method: "POST",
@@ -156,7 +168,13 @@ export default function MarsMap(){
                         start: startCellRef.current,
                         destination: cell,
                         maxSlope: maxSlope,
-                        walkingSpeed: walkingSpeed
+                        walkingSpeed: walkingSpeed,
+                        waypoints: scienceObjectives.filter((objective) => 
+                            selectedObjectivesRef.current.includes(objective.id)
+                        ).map((objective) => ({
+                            row: objective.row,
+                            col: objective.col
+                        }))
                     }),
                 });
 
@@ -165,6 +183,7 @@ export default function MarsMap(){
                 }
 
                 const data = await response.json();
+                console.log("Returned route:", data.path);
 
                 setRoute(data.path);
                 setRouteMetrics(data.metrics);
@@ -183,6 +202,10 @@ export default function MarsMap(){
 
         console.log("Click processed");
     };
+
+    useEffect(() => {
+        selectedObjectivesRef.current = selectedObjectives;
+    }, [selectedObjectives]);
 
 
     useEffect(() => {
@@ -426,11 +449,12 @@ export default function MarsMap(){
                             type="checkbox"
                             checked={selectedObjectives.includes(objective.id)}
                             onChange={(event) => {
-                                setSelectedObjectives((previous) =>
-                                    event.target.checked
-                                        ? [...previous, objective.id]
-                                        : previous.filter((id) => id !== objective.id)
-                                );
+                                const updatedSelection = event.target.checked ? 
+                                [...selectedObjectivesRef.current, objective.id] :
+                                 selectedObjectivesRef.current.filter((id) => id !== objective.id);
+                                
+                                selectedObjectivesRef.current = updatedSelection;
+                                setSelectedObjectives(updatedSelection);
                             }}
                         />
 

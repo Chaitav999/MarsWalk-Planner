@@ -1,5 +1,6 @@
 package com.marswalk.backend.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -34,12 +35,43 @@ public class RouteController {
     public RouteResponse calculateRoute(@RequestBody RouteRequest request){
         
         int[][] grid = gridLoader.getGrid();
+        double[][] slopeGrid = gridLoader.getSlopeGrid();
 
-        List<GridCell> path = pathfinder.findPath(grid,gridLoader.getSlopeGrid(), request.start(), request.destination(), request.maxSlope());
+        List<GridCell> targets = new ArrayList<>();
 
-        RouteMetrics metrics = metricsCalculator.calculate(path, grid, request.walkingSpeed());
+        if(request.waypoints() != null){
+            targets.addAll(request.waypoints());
+        }
 
-        return new RouteResponse(path, metrics);
+        targets.add(request.destination());
+
+        List<GridCell> completePath = new ArrayList<>();
+
+        GridCell currentPosition = request.start();
+
+        for(GridCell target : targets){
+
+            List<GridCell> segment = pathfinder.findPath(grid, slopeGrid, currentPosition, target, request.maxSlope());
+
+            if(segment.isEmpty()){
+                completePath.clear();
+                break;
+            }
+
+            if(completePath.isEmpty()){
+                completePath.addAll(segment);
+            } else{
+                completePath.addAll(segment.subList(1, segment.size()));
+            }
+
+            currentPosition = target;
+        }
+
+
+
+        RouteMetrics metrics = metricsCalculator.calculate(completePath, grid, request.walkingSpeed());
+
+        return new RouteResponse(completePath, metrics);
     }
     
 }
